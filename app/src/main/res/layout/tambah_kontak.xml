@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_margin="12dp">
+    android:padding="12dp"
+    android:background="@drawable/background_720x1280">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -24,6 +25,7 @@
                 android:fontFamily="@font/dosis_medium"
                 android:text="Tambah Kontak"
                 android:textAlignment="center"
+                android:textColor="#fff"
                 android:textSize="18sp" />
         </LinearLayout>
 
@@ -38,6 +40,7 @@
                 android:layout_weight="1"
                 android:fontFamily="@font/dosis_medium"
                 android:text="Nama"
+                android:textColor="#fff"
                 android:textSize="18sp" />
 
             <EditText
@@ -46,6 +49,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="5"
                 android:ems="10"
+                android:textColor="#fff"
                 android:fontFamily="@font/dosis_medium"
                 android:inputType="textPersonName" />
         </LinearLayout>
@@ -61,6 +65,7 @@
                 android:layout_weight="1"
                 android:fontFamily="@font/dosis_medium"
                 android:text="Email"
+                android:textColor="#fff"
                 android:textSize="18sp" />
 
             <EditText
@@ -70,7 +75,8 @@
                 android:layout_weight="5"
                 android:ems="10"
                 android:fontFamily="@font/dosis_medium"
-                android:inputType="textPassword" />
+                android:textColor="#fff"
+                android:inputType="textEmailAddress" />
         </LinearLayout>
 
         <LinearLayout
@@ -84,6 +90,7 @@
                 android:layout_weight="1"
                 android:fontFamily="@font/dosis_medium"
                 android:text="Foto"
+                android:textColor="#fff"
                 android:layout_marginTop="12dp"
                 android:textSize="18sp" />
         </LinearLayout>
@@ -100,25 +107,48 @@
                 <Button
                     android:id="@+id/btnAmbilfoto"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="40dp"
                     android:layout_weight="1"
+                    android:layout_marginRight="20dp"
+                    android:layout_marginLeft="20dp"
                     android:fontFamily="@font/dosis_medium"
-                    android:text="Ambil foto" />
+                    android:text="Ambil foto"
+                    android:shadowColor="#787878"
+                    android:shadowDx="7"
+                    android:shadowDy="2"
+                    android:shadowRadius="5"
+                    android:textColor="#fff"
+                    android:background="@drawable/button_shape" />
 
                 <Button
                     android:id="@+id/btnPilihfoto"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="40dp"
                     android:layout_weight="1"
+                    android:layout_marginRight="20dp"
+                    android:layout_marginLeft="20dp"
                     android:fontFamily="@font/dosis_medium"
-                    android:text="Pilih foto" />
+                    android:text="Pilih foto"
+                    android:textColor="#fff"
+                    android:shadowColor="#787878"
+                    android:shadowDx="7"
+                    android:shadowDy="2"
+                    android:shadowRadius="5"
+                    android:background="@drawable/button_shape"
+                    />
             </LinearLayout>
+
+            <TextView
+                android:id="@+id/txtDraw"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
 
             <ImageView
                 android:id="@+id/imageView"
                 android:layout_width="300dp"
                 android:layout_height="300dp"
-                android:layout_gravity="center" />
+                android:layout_gravity="center"
+                android:src="@drawable/ic_person_white_24dp" />
         </LinearLayout>
     </LinearLayout>
 

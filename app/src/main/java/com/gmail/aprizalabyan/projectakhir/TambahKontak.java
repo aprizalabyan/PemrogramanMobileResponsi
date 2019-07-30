@@ -1,11 +1,17 @@
 package com.gmail.aprizalabyan.projectakhir;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -14,27 +20,49 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class TambahKontak extends AppCompatActivity {
-    ImageView imageView;
-    Button btnAmbilfoto;
-    Button btnPilihFoto;
-    Uri file;
+    private EditText txtNama;
+    private EditText txtEmail;
+    private ImageView imageView;
+    private Button btnAmbilfoto;
+    private Button btnPilihFoto;
+    private Uri file;
+
+    MySQLHelper dbHelper;
+    TextView txtDraw;
+    Bitmap imageTake;
+    Bitmap imageSelect;
+
+    private ProgressDialog progressBar;
+    private int progressBarStatus = 0;
+    private Handler progressBarbHandler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.tambah_kontak);
 
+        dbHelper = new MySQLHelper(this);
+
+        txtNama = findViewById(R.id.txtNama);
+        txtEmail = findViewById(R.id.txtEmail);
         imageView = findViewById(R.id.imageView);
         btnAmbilfoto = findViewById(R.id.btnAmbilfoto);
         btnPilihFoto = findViewById(R.id.btnPilihfoto);
+        txtDraw = findViewById(R.id.txtDraw);
 
         //TODO 2 : mengecek jika belum memiliki permission untuk mengakses kamera
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
@@ -68,16 +96,22 @@ public class TambahKontak extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Simpan", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                if(txtNama.getText().toString().isEmpty()) {
+                    Snackbar.make(view, "Nama harus diisi", Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Berhasil Simpan", Toast.LENGTH_SHORT).show();
+                    addKontak();
+                    Intent intentMenu = new Intent(getApplicationContext(), MainActivity.class);
+                    intentMenu.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    startActivity(intentMenu);
+                }
             }
         });
     }
 
-    //TODO 3 : method untuk hasil request permission kamera
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        //TODO 3.1 : mengecek jika sudah meiliki permission maka button camera dienable
         if (requestCode == 0) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED
                     && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
@@ -86,15 +120,15 @@ public class TambahKontak extends AppCompatActivity {
         }
     }
 
-    //TODO 5 : method untuk activity hasil take picture
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data){
-        //TODO 5.1 : mengecek jika hasilnya benar maka akan menampilkan gambar tersebut pada image view
         if (requestCode == 0) {
             if (resultCode == RESULT_OK) {
-                imageView.setImageURI(file);
+                String path = file.getPath();
+                decodeFileTake(path);
+                setProgressBar();
+                imageView.setImageBitmap(imageTake);
             }
-            //TODO 5.2 : jika user membatalkan take picture maka akan memunculkan toast
             else if (resultCode == RESULT_CANCELED){
                 Toast.makeText(getApplicationContext(),"Cancel",Toast.LENGTH_SHORT).show();
             }
@@ -102,32 +136,145 @@ public class TambahKontak extends AppCompatActivity {
         else if (requestCode == 1){
             if (resultCode == RESULT_OK){
                 file = data.getData();
-                imageView.setImageURI(file);
+                String path = file.getEncodedPath();
+                decodeFileSelect(path);
+                setProgressBar();
+                imageView.setImageBitmap(imageSelect);
+                /*
+                try{
+                    file = data.getData();
+                    //imageView.setImageURI(file);
+                    InputStream imageStream = getContentResolver().openInputStream(file);
+                    Bitmap imageSelect = BitmapFactory.decodeStream(imageStream);
+                    setProgressBar();
+                    imageView.setImageBitmap(imageSelect);
+
+                    String addImage = imageView.getDrawable().toString();
+                    txtDraw.setText(addImage);
+                } catch (FileNotFoundException e){
+                    e.printStackTrace();
+                }*/
             }
-            //TODO 5.2 : jika user membatalkan take picture maka akan memunculkan toast
             else if (resultCode == RESULT_CANCELED){
                 Toast.makeText(getApplicationContext(),"Cancel",Toast.LENGTH_SHORT).show();
             }
         }
     }
 
-    //TODO 6 : method untuk menyimpan hasil foto
     private static File getOutputMediaFile(){
-        //TODO 6.1 : mengambil direktori pictures dari penyimpanan perangkat
         File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES), "Camera");
 
-        //TODO 6.2 : mengecek direktori pictures ada atau tidak
         if (!mediaStorageDir.exists()){
             if (!mediaStorageDir.mkdirs()){
                 return null;
             }
         }
 
-        //TODO 6.3 : membuat time stamp untuk gambar hasil foto
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        //TODO 6.4 : membuat file baru atau menyimpan hasil foto pada direktori yang telah diset tadi
         return new File(mediaStorageDir.getPath() + File.separator +
                 "IMG_"+ timeStamp + ".jpg");
+    }
+
+    public void setProgressBar(){
+        progressBar = new ProgressDialog(this);
+        progressBar.setCancelable(true);
+        progressBar.setMessage("Please wait...");
+        progressBar.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressBar.setProgress(0);
+        progressBar.setMax(100);
+        progressBar.show();
+        progressBarStatus = 0;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (progressBarStatus < 100){
+                    progressBarStatus += 30;
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    progressBarbHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            progressBar.setProgress(progressBarStatus);
+                        }
+                    });
+                }
+                if (progressBarStatus >= 100) {
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    progressBar.dismiss();
+                }
+            }
+        }).start();
+    }
+
+    private void addKontak(){
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        String addNama = txtNama.getText().toString().trim();
+        String addEmail = txtEmail.getText().toString().trim();
+
+        Bitmap imgBit = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        imgBit.compress(Bitmap.CompressFormat.PNG, 80, baos);
+        byte[] imgByte = baos.toByteArray();
+
+        dbHelper.addToDb(addNama, addEmail, imgByte);
+        dbHelper.close();
+    }
+
+    private Bitmap decodeFileTake(String imgPath) {
+        int max_size = 1000;
+        File f = new File(imgPath);
+        try {
+            BitmapFactory.Options o = new BitmapFactory.Options();
+            o.inJustDecodeBounds = true;
+            FileInputStream fis = new FileInputStream(f);
+            BitmapFactory.decodeStream(fis, null, o);
+            fis.close();
+            int scale = 1;
+            if (o.outHeight > max_size || o.outWidth > max_size)
+            {
+                scale = (int) Math.pow(2, (int) Math.ceil(Math.log(max_size / (double) Math.max(o.outHeight, o.outWidth)) / Math.log(0.5)));
+            }
+            BitmapFactory.Options o2 = new BitmapFactory.Options();
+            o2.inSampleSize = scale;
+            fis = new FileInputStream(f);
+            imageTake = BitmapFactory.decodeStream(fis, null, o2);
+            fis.close();
+        }
+        catch (Exception e) {
+        }
+        return imageTake;
+    }
+
+    private Bitmap decodeFileSelect(String imgPath) {
+        int max_size = 1000;
+        File f = new File(imgPath);
+        try {
+            BitmapFactory.Options o = new BitmapFactory.Options();
+            o.inJustDecodeBounds = true;
+            FileInputStream fis = new FileInputStream(f);
+            BitmapFactory.decodeStream(fis, null, o);
+            fis.close();
+            int scale = 1;
+            if (o.outHeight > max_size || o.outWidth > max_size)
+            {
+                scale = (int) Math.pow(2, (int) Math.ceil(Math.log(max_size / (double) Math.max(o.outHeight, o.outWidth)) / Math.log(0.5)));
+            }
+            BitmapFactory.Options o2 = new BitmapFactory.Options();
+            o2.inSampleSize = scale;
+            fis = new FileInputStream(f);
+            imageTake = BitmapFactory.decodeStream(fis, null, o2);
+            fis.close();
+        }
+        catch (Exception e) {
+        }
+        return imageSelect;
     }
 }
