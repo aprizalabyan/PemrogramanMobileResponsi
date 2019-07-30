@@ -125,7 +125,7 @@ public class TambahKontak extends AppCompatActivity {
         if (requestCode == 0) {
             if (resultCode == RESULT_OK) {
                 String path = file.getPath();
-                decodeFileTake(path);
+                decodeFile(path);
                 setProgressBar();
                 imageView.setImageBitmap(imageTake);
             }
@@ -135,25 +135,22 @@ public class TambahKontak extends AppCompatActivity {
         }
         else if (requestCode == 1){
             if (resultCode == RESULT_OK){
+                /*
                 file = data.getData();
                 String path = file.getEncodedPath();
                 decodeFileSelect(path);
                 setProgressBar();
                 imageView.setImageBitmap(imageSelect);
-                /*
+                */
                 try{
                     file = data.getData();
-                    //imageView.setImageURI(file);
                     InputStream imageStream = getContentResolver().openInputStream(file);
                     Bitmap imageSelect = BitmapFactory.decodeStream(imageStream);
                     setProgressBar();
                     imageView.setImageBitmap(imageSelect);
-
-                    String addImage = imageView.getDrawable().toString();
-                    txtDraw.setText(addImage);
                 } catch (FileNotFoundException e){
                     e.printStackTrace();
-                }*/
+                }
             }
             else if (resultCode == RESULT_CANCELED){
                 Toast.makeText(getApplicationContext(),"Cancel",Toast.LENGTH_SHORT).show();
@@ -228,7 +225,7 @@ public class TambahKontak extends AppCompatActivity {
         dbHelper.close();
     }
 
-    private Bitmap decodeFileTake(String imgPath) {
+    private Bitmap decodeFile(String imgPath) {
         int max_size = 1000;
         File f = new File(imgPath);
         try {
@@ -251,30 +248,5 @@ public class TambahKontak extends AppCompatActivity {
         catch (Exception e) {
         }
         return imageTake;
-    }
-
-    private Bitmap decodeFileSelect(String imgPath) {
-        int max_size = 1000;
-        File f = new File(imgPath);
-        try {
-            BitmapFactory.Options o = new BitmapFactory.Options();
-            o.inJustDecodeBounds = true;
-            FileInputStream fis = new FileInputStream(f);
-            BitmapFactory.decodeStream(fis, null, o);
-            fis.close();
-            int scale = 1;
-            if (o.outHeight > max_size || o.outWidth > max_size)
-            {
-                scale = (int) Math.pow(2, (int) Math.ceil(Math.log(max_size / (double) Math.max(o.outHeight, o.outWidth)) / Math.log(0.5)));
-            }
-            BitmapFactory.Options o2 = new BitmapFactory.Options();
-            o2.inSampleSize = scale;
-            fis = new FileInputStream(f);
-            imageTake = BitmapFactory.decodeStream(fis, null, o2);
-            fis.close();
-        }
-        catch (Exception e) {
-        }
-        return imageSelect;
     }
 }
